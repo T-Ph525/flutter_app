@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:android_download_manager/android_download_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:your_package/main_view_model.dart';
+import 'package:your_package/download_manager.dart';
 
 class Downloadable {
   final String name;
