@@ -1,109 +1,169 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:io';
 
-void main() => runApp(new MyApp());
+class MainActivity extends StatefulWidget {
+  final ActivityManager? activityManager;
+  final DownloadManager? downloadManager;
+  final ClipboardManager? clipboardManager;
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+  MainActivity({
+    this.activityManager,
+    this.downloadManager,
+    this.clipboardManager,
+  });
+
+  @override
+  _MainActivityState createState() => _MainActivityState();
+}
+
+class _MainActivityState extends State<MainActivity> {
+  final String? tag = 'MainActivity';
+  late ActivityManager _activityManager;
+  late DownloadManager _downloadManager;
+  late ClipboardManager _clipboardManager;
+  late MainViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _activityManager = widget.activityManager ?? ActivityManager();
+    _downloadManager = widget.downloadManager ?? DownloadManager();
+    _clipboardManager = widget.clipboardManager ?? ClipboardManager();
+    _viewModel = MainViewModel();
+
+    _initializeApp();
+  }
+
+  // Get memory information
+  MemoryInfo availableMemory() {
+    var memoryInfo = MemoryInfo();
+    _activityManager.getMemoryInfo(memoryInfo);
+    return memoryInfo;
+  }
+
+  void _initializeApp() {
+    final free = formatFileSize(availableMemory().availMem);
+    final total = formatFileSize(availableMemory().totalMem);
+
+    _viewModel.log("Current memory: $free / $total");
+    _viewModel.log("Downloads directory: ${getExternalFilesDir()}");
+
+    final extFilesDir = getExternalFilesDir();
+
+    final models = [
+      Downloadable(
+        "Phi-2 7B (Q4_0, 1.6 GiB)",
+        Uri.parse("https://huggingface.co/ggml-org/models/resolve/main/phi-2/ggml-model-q4_0.gguf?download=true"),
+        File('${extFilesDir.path}/phi-2-q4_0.gguf'),
+      ),
+      Downloadable(
+        "TinyLlama 1.1B (f16, 2.2 GiB)",
+        Uri.parse("https://huggingface.co/ggml-org/models/resolve/main/tinyllama-1.1b/ggml-model-f16.gguf?download=true"),
+        File('${extFilesDir.path}/tinyllama-1.1-f16.gguf'),
+      ),
+      Downloadable(
+        "Phi 2 DPO (Q3_K_M, 1.48 GiB)",
+        Uri.parse("https://huggingface.co/TheBloke/phi-2-dpo-GGUF/resolve/main/phi-2-dpo.Q3_K_M.gguf?download=true"),
+        File('${extFilesDir.path}/phi-2-dpo.Q3_K_M.gguf'),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    return new MaterialApp(
-      title: 'Flutter Demo',
-      theme: new ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or press Run > Flutter Hot Reload in IntelliJ). Notice that the
-        // counter didn't reset back to zero; the application is not restarted.
-        primarySwatch: Colors.blue,
+    return MaterialApp(
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      home: new MyHomePage(title: 'Flutter Demo Home Page'),
+      home: Scaffold(
+        body: SafeArea(
+          child: MainCompose(
+            viewModel: _viewModel,
+            clipboard: _clipboardManager,
+            dm: _downloadManager,
+            models: models,
+          ),
+        ),
+      ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+class MainCompose extends StatelessWidget {
+  final MainViewModel viewModel;
+  final ClipboardManager clipboard;
+  final DownloadManager dm;
+  final List<Downloadable> models;
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  _MyHomePageState createState() => new _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  const MainCompose({
+    required this.viewModel,
+    required this.clipboard,
+    required this.dm,
+    required this.models,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return new Scaffold(
-      appBar: new AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: new Text(widget.title),
-      ),
-      body: new Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: new Column(
-          // Column is also layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug paint" (press "p" in the console where you ran
-          // "flutter run", or select "Toggle Debug Paint" from the Flutter tool
-          // window in IntelliJ) to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            new Text(
-              'Pressing buttons is super fun man!',
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            itemCount: viewModel.messages.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  viewModel.messages[index],
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              );
+            },
+          ),
+        ),
+        TextField(
+          controller: TextEditingController(text: viewModel.message),
+          onChanged: viewModel.updateMessage,
+          decoration: InputDecoration(
+            labelText: 'Message',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        Row(
+          children: [
+            ElevatedButton(
+              onPressed: viewModel.send,
+              child: Text('Send'),
             ),
-            new Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
+            ElevatedButton(
+              onPressed: () => viewModel.bench(8, 4, 1),
+              child: Text('Bench'),
+            ),
+            ElevatedButton(
+              onPressed: viewModel.clear,
+              child: Text('Clear'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(
+                  text: viewModel.messages.join('\n'),
+                ));
+              },
+              child: Text('Copy'),
             ),
           ],
         ),
-      ),
-      floatingActionButton: new FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: new Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        Column(
+          children: models.map((model) => 
+            DownloadableButton(
+              viewModel: viewModel,
+              dm: dm,
+              downloadable: model,
+            ),
+          ).toList(),
+        ),
+      ],
     );
   }
 }
