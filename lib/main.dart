@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
+import 'package:your_package/main_view_model.dart';
+import 'package:your_package/activity_manager.dart';
+import 'package:your_package/download_manager.dart';
+import 'package:your_package/clipboard_manager.dart';
+import 'package:your_package/downloadable.dart';
+import 'package:your_package/downloadable_button.dart';
 
 class MainActivity extends StatefulWidget {
   final ActivityManager? activityManager;
